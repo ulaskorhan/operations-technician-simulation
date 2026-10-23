@@ -1,0 +1,6 @@
+---
+# A namespace keeps the lab's objects separate from k3s's own (kube-system).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ops-lab

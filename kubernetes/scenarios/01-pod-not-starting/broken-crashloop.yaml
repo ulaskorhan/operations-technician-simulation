@@ -1,0 +1,41 @@
+---
+# BROKEN on purpose (scenario 01, part B): nginx is started with a config file that does not exist.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: ops-lab
+  labels:
+    app: web
+spec:
+  replicas: 2                 # how many identical pods to run
+  selector:
+    matchLabels:
+      app: web                # the deployment manages pods with this label
+  template:                   # the pod "blueprint"
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27   # always pin a version, never rely on "latest"
+          # args replaces the image CMD, so nginx starts, fails to read the file and exits.
+          args: ["nginx", "-c", "/etc/nginx/missing.conf", "-g", "daemon off;"]
+          ports:
+            - containerPort: 80
+          # Kubernetes only sends traffic to a pod once this check succeeds.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          # Requests = what the scheduler reserves; limits = the most the pod may use.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
