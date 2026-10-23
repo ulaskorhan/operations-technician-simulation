@@ -1,0 +1,62 @@
+---
+# healthcheck.yml - collect disk, memory, load and failed services from every host,
+# print a short summary and save one report file per host on the control node.
+#
+#   ansible-playbook playbooks/healthcheck.yml -K
+#   ls ../reports/
+
+- name: Health check of Linux servers
+  hosts: linux
+  become: true
+  gather_facts: true   # facts give us disks (mounts) and memory without extra commands
+
+  vars:
+    disk_warn_percent: 85
+    mem_warn_percent: 90
+    report_dir: "{{ playbook_dir }}/../reports"
+
+  tasks:
+    # --plain --no-legend gives one failed unit per line and nothing else.
+    # noqa: the systemd module can start/stop units but cannot list failed ones, so a command is needed here.
+    - name: List failed systemd units
+      ansible.builtin.command: systemctl --failed --plain --no-legend  # noqa: command-instead-of-module
+      register: failed_units
+      changed_when: false
+
+    - name: Read the load average
+      ansible.builtin.slurp:
+        src: /proc/loadavg
+      register: loadavg
+
+    # slurp returns the file base64-encoded; b64decode turns it back into text.
+    - name: Calculate memory use and load
+      ansible.builtin.set_fact:
+        hc_mem_used_pct: "{{ (100 - (ansible_facts['memory_mb']['nocache']['free'] / ansible_facts['memory_mb']['real']['total'] * 100)) | round(1) }}"
+        hc_load1: "{{ (loadavg['content'] | b64decode).split()[0] }}"
+        hc_failed: "{{ failed_units.stdout_lines }}"
+
+    - name: Create the report folder on the control node
+      ansible.builtin.file:
+        path: "{{ report_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost   # run this task on the control node, not on the target
+      run_once: true           # once for the whole play, not once per host
+      become: false
+
+    # The template does the disk calculations and marks each line OK or WARN.
+    - name: Write the report for this host
+      ansible.builtin.template:
+        src: templates/healthcheck-report.j2
+        dest: "{{ report_dir }}/{{ inventory_hostname }}-{{ ansible_facts['date_time']['date'] }}.txt"
+        mode: "0644"
+      delegate_to: localhost
+      become: false
+
+    - name: Short summary
+      ansible.builtin.debug:
+        msg:
+          - "Memory used: {{ hc_mem_used_pct }}% ({{ 'WARN' if hc_mem_used_pct | float > mem_warn_percent else 'OK' }})"
+          - "Load (1 min): {{ hc_load1 }} on {{ ansible_facts['processor_vcpus'] }} vCPU"
+          - "Failed units: {{ hc_failed | length }} {{ hc_failed }}"
+          - "Report: {{ report_dir }}/{{ inventory_hostname }}-{{ ansible_facts['date_time']['date'] }}.txt"

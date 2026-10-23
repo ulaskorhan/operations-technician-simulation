@@ -1,0 +1,13 @@
+<!doctype html>
+<!-- {{ ansible_managed }} -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ inventory_hostname }}</title>
+</head>
+<body>
+  <h1>{{ inventory_hostname }}</h1>
+  <p>Operations Technician Simulation lab - deployed by Ansible.</p>
+  <p>OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}</p>
+</body>
+</html>

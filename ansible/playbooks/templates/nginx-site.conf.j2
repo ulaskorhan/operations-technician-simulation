@@ -1,0 +1,25 @@
+# {{ ansible_managed }}
+# Do not edit by hand on the server: change ansible/playbooks/templates/nginx-site.conf.j2 and run nginx.yml.
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name {{ nginx_server_name }};
+    root {{ nginx_web_root }};
+    index index.html;
+
+    access_log /var/log/nginx/access.log;
+    error_log  /var/log/nginx/error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Small status endpoint for health checks: curl http://<host>/health
+    location = /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+}

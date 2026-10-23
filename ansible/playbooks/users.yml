@@ -1,0 +1,45 @@
+---
+# users.yml - create local users and install their SSH public keys, from variables.
+# The list of users is in playbooks/vars/users.yml, the keys in playbooks/files/keys/.
+#
+#   ansible-playbook playbooks/users.yml -K --check --diff --limit ops-lnx02
+
+- name: Manage local users and SSH keys
+  hosts: linux
+  become: true
+
+  vars_files:
+    - vars/users.yml
+
+  tasks:
+    - name: Create users
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        comment: "{{ item.comment }}"
+        shell: /bin/bash
+        groups: "{{ item.groups }}"
+        append: true   # add to these groups, do not remove the user from other groups
+        state: present
+      loop: "{{ lab_users }}"
+      loop_control:
+        label: "{{ item.name }}"   # only print the name in the output, not the whole item
+
+    # The file lookup reads the key on the control node (from playbooks/files/keys/).
+    # authorized_key creates ~/.ssh and authorized_keys with the correct owner and permissions.
+    - name: Install SSH public keys
+      ansible.posix.authorized_key:
+        user: "{{ item.name }}"
+        key: "{{ lookup('ansible.builtin.file', 'keys/' ~ item.name ~ '.pub') }}"
+        state: present
+      loop: "{{ lab_users }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Remove users that should no longer exist
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        state: absent
+        remove: true   # also delete the home folder
+      loop: "{{ removed_users }}"
+      loop_control:
+        label: "{{ item.name }}"

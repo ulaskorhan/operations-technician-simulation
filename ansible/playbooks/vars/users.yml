@@ -1,0 +1,16 @@
+---
+# Users that users.yml creates on every Linux host.
+# Each user needs a public key file in playbooks/files/keys/<name>.pub
+lab_users:
+  - name: labuser
+    comment: "Lab test user (Linux scenario 06)"
+    groups: []
+  - name: opsviewer
+    comment: "Read-only operations user"
+    groups:
+      - adm        # can read /var/log files like syslog and auth.log
+      - systemd-journal
+
+# Users that must NOT exist (offboarding). Their home folders are removed too.
+removed_users: []
+#  - name: olduser

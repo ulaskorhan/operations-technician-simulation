@@ -1,0 +1,50 @@
+---
+# update.yml - patch Ubuntu servers, and reboot only if a package needs it.
+#
+#   ansible-playbook playbooks/update.yml -K --check --limit ops-lnx02   # dry run on one host
+#   ansible-playbook playbooks/update.yml -K --limit ops-lnx02           # real run on one host
+#   ansible-playbook playbooks/update.yml -K                             # all hosts, one at a time
+
+- name: Update and upgrade Ubuntu servers
+  hosts: linux
+  become: true
+  serial: 1   # one host at a time: if something breaks, only one server is affected
+
+  tasks:
+    - name: Update the package list and upgrade all packages
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600   # skip "apt update" if it ran less than an hour ago
+        upgrade: dist            # like "apt full-upgrade": may also install new dependencies (kernels)
+      register: apt_upgrade
+
+    - name: Show what apt did
+      ansible.builtin.debug:
+        msg: "{{ apt_upgrade.stdout_lines | default(['nothing to upgrade']) | select('search', 'upgraded|newly installed') | list }}"
+
+    - name: Remove packages that are no longer needed
+      ansible.builtin.apt:
+        autoremove: true
+
+    # Ubuntu creates this file when an upgraded package (for example the kernel) needs a reboot.
+    - name: Check if a reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    # The reboot module waits until the host is back and answering before it continues.
+    - name: Reboot managed nodes if required
+      ansible.builtin.reboot:
+        msg: "Reboot by Ansible after package upgrades"
+        reboot_timeout: 600
+      when:
+        - reboot_required.stat.exists
+        - not (control_node | default(false))
+
+    # Rebooting the control node would kill this Ansible run, so only print a reminder.
+    - name: Remind me to reboot the control node by hand
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} needs a reboot. Reboot it manually when the play has finished."
+      when:
+        - reboot_required.stat.exists
+        - control_node | default(false)

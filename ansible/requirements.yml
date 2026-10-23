@@ -1,0 +1,5 @@
+---
+# Collections used by the playbooks. The Ubuntu "ansible" package already includes them.
+# With only ansible-core installed, run: ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: ansible.posix   # authorized_key module (users.yml)

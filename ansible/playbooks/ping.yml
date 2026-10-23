@@ -1,0 +1,13 @@
+---
+# ping.yml - can Ansible reach every host and run Python there?
+# This is not an ICMP ping: it logs in (SSH or local) and answers "pong".
+#
+#   ansible-playbook playbooks/ping.yml
+
+- name: Check that Ansible can reach all Linux hosts
+  hosts: linux
+  gather_facts: false   # skip collecting facts, we only want a quick reachability test
+
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:

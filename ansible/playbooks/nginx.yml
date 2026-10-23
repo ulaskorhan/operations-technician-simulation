@@ -1,0 +1,60 @@
+---
+# nginx.yml - install nginx, deploy the site config and index page from templates,
+# and reload nginx only when the config actually changed (handler).
+#
+#   ansible-playbook playbooks/nginx.yml -K --check --diff --limit ops-lnx02
+
+- name: Install and configure nginx
+  hosts: web
+  become: true
+
+  vars:
+    nginx_server_name: "{{ inventory_hostname }}.lab.local"
+    nginx_web_root: /var/www/html
+
+  tasks:
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    # template = copy a file, but first fill in the {{ variables }} inside it.
+    # backup: true keeps the old file with a timestamp, so a change can be rolled back by hand.
+    - name: Deploy the site configuration
+      ansible.builtin.template:
+        src: templates/nginx-site.conf.j2
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: "0644"
+        backup: true
+      notify: Reload nginx
+
+    - name: Deploy the index page
+      ansible.builtin.template:
+        src: templates/index.html.j2
+        dest: "{{ nginx_web_root }}/index.html"
+        owner: root
+        group: root
+        mode: "0644"
+
+    # Test the whole config before the handler reloads nginx. If the test fails, the play
+    # stops for this host and the handler never runs, so the running nginx keeps the old config.
+    - name: Test the nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false   # a test never changes anything
+
+    - name: Make sure nginx is running and starts at boot
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+  # Handlers run once, at the end of the play, and only if a task "notified" them with a change.
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

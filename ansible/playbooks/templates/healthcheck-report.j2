@@ -1,0 +1,26 @@
+Health check: {{ inventory_hostname }}
+Date:         {{ ansible_facts['date_time']['iso8601'] }}
+OS:           {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }} (kernel {{ ansible_facts['kernel'] }})
+Uptime:       {{ (ansible_facts['uptime_seconds'] / 86400) | round(1) }} days
+
+== Disks (warn above {{ disk_warn_percent }}% used) ==
+{# Skip snap images (squashfs) and memory filesystems; they are always "full" or not real disks. #}
+{% for m in ansible_facts['mounts'] if m['fstype'] not in ['squashfs', 'tmpfs', 'overlay'] and m['size_total'] > 0 %}
+{% set pct = ((m['size_total'] - m['size_available']) / m['size_total'] * 100) | round(1) %}
+{{ 'WARN' if pct > disk_warn_percent else 'OK  ' }}  {{ m['mount'] }}  {{ pct }}% used  ({{ (m['size_available'] / 1073741824) | round(1) }} GB free)
+{% endfor %}
+
+== Memory (warn above {{ mem_warn_percent }}% used) ==
+{{ 'WARN' if hc_mem_used_pct | float > mem_warn_percent else 'OK  ' }}  {{ hc_mem_used_pct }}% used of {{ ansible_facts['memory_mb']['real']['total'] }} MB
+
+== Load ==
+1 min load {{ hc_load1 }} on {{ ansible_facts['processor_vcpus'] }} vCPU
+
+== Failed systemd units ==
+{% if hc_failed | length == 0 %}
+OK    none
+{% else %}
+{% for unit in hc_failed %}
+WARN  {{ unit }}
+{% endfor %}
+{% endif %}
