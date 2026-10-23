@@ -29,7 +29,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module ActiveDirectory
 
-function Write-Log {
+function Write-OpsLog {
     param(
         [string]$Message,
         [ValidateSet('INFO', 'WARN', 'ERROR')][string]$Level = 'INFO'
@@ -46,7 +46,7 @@ if (-not (Test-Path $logDir)) { New-Item -Path $logDir -ItemType Directory | Out
 Get-ADOrganizationalUnit -Identity $DisabledOU | Out-Null
 
 $rows = Import-Csv -Path $CsvPath
-Write-Log "Offboarding started by $env:USERNAME, $($rows.Count) row(s) in $CsvPath"
+Write-OpsLog "Offboarding started by $env:USERNAME, $($rows.Count) row(s) in $CsvPath"
 
 foreach ($row in $rows) {
     $sam = $row.SamAccountName.Trim()
@@ -54,28 +54,28 @@ foreach ($row in $rows) {
     # -Properties MemberOf asks AD to also return the list of groups.
     $user = Get-ADUser -Filter "SamAccountName -eq '$sam'" -Properties MemberOf
     if (-not $user) {
-        Write-Log "$sam not found, skipped" -Level WARN
+        Write-OpsLog "$sam not found, skipped" -Level WARN
         continue
     }
 
     if ($PSCmdlet.ShouldProcess($sam, 'Disable account')) {
         Disable-ADAccount -Identity $user
         Set-ADUser -Identity $user -Description "Disabled $(Get-Date -Format 'yyyy-MM-dd') by $env:USERNAME"
-        Write-Log "$sam disabled"
+        Write-OpsLog "$sam disabled"
     }
 
     foreach ($groupDn in $user.MemberOf) {
         if ($PSCmdlet.ShouldProcess($sam, "Remove from $groupDn")) {
             # -Confirm:$false: do not ask for every single group.
             Remove-ADGroupMember -Identity $groupDn -Members $user -Confirm:$false
-            Write-Log "$sam removed from $groupDn"
+            Write-OpsLog "$sam removed from $groupDn"
         }
     }
 
     if ($PSCmdlet.ShouldProcess($sam, "Move to $DisabledOU")) {
         Move-ADObject -Identity $user.DistinguishedName -TargetPath $DisabledOU
-        Write-Log "$sam moved to $DisabledOU"
+        Write-OpsLog "$sam moved to $DisabledOU"
     }
 }
 
-Write-Log 'Offboarding finished'
+Write-OpsLog 'Offboarding finished'

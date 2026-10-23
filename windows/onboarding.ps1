@@ -33,7 +33,7 @@ $ErrorActionPreference = 'Stop'
 Import-Module ActiveDirectory
 
 # Write a line with a timestamp to the log file and to the screen.
-function Write-Log {
+function Write-OpsLog {
     param(
         [string]$Message,
         [ValidateSet('INFO', 'WARN', 'ERROR')][string]$Level = 'INFO'
@@ -48,7 +48,7 @@ $logDir = Split-Path -Path $LogPath -Parent
 if (-not (Test-Path $logDir)) { New-Item -Path $logDir -ItemType Directory | Out-Null }
 
 $users = Import-Csv -Path $CsvPath
-Write-Log "Onboarding started by $env:USERNAME, $($users.Count) row(s) in $CsvPath"
+Write-OpsLog "Onboarding started by $env:USERNAME, $($users.Count) row(s) in $CsvPath"
 
 # Ask once for the initial password. -AsSecureString keeps it out of the screen and the history.
 $initialPassword = Read-Host -Prompt 'Initial password for the new users' -AsSecureString
@@ -58,7 +58,7 @@ foreach ($row in $users) {
 
     # 1. Skip users that already exist.
     if (Get-ADUser -Filter "SamAccountName -eq '$sam'") {
-        Write-Log "$sam already exists, skipped" -Level WARN
+        Write-OpsLog "$sam already exists, skipped" -Level WARN
         continue
     }
 
@@ -66,7 +66,7 @@ foreach ($row in $users) {
     try {
         Get-ADOrganizationalUnit -Identity $row.OU | Out-Null
     } catch {
-        Write-Log "$sam skipped: OU '$($row.OU)' not found" -Level ERROR
+        Write-OpsLog "$sam skipped: OU '$($row.OU)' not found" -Level ERROR
         continue
     }
 
@@ -89,9 +89,9 @@ foreach ($row in $users) {
     if ($PSCmdlet.ShouldProcess($sam, "Create user in $($row.OU)")) {
         try {
             New-ADUser @newUser
-            Write-Log "$sam created in $($row.OU)"
+            Write-OpsLog "$sam created in $($row.OU)"
         } catch {
-            Write-Log "$sam could not be created: $($_.Exception.Message)" -Level ERROR
+            Write-OpsLog "$sam could not be created: $($_.Exception.Message)" -Level ERROR
             continue
         }
     }
@@ -102,12 +102,12 @@ foreach ($row in $users) {
         if ($PSCmdlet.ShouldProcess($sam, "Add to group $group")) {
             try {
                 Add-ADGroupMember -Identity $group -Members $sam
-                Write-Log "$sam added to $group"
+                Write-OpsLog "$sam added to $group"
             } catch {
-                Write-Log "$sam could not be added to ${group}: $($_.Exception.Message)" -Level ERROR
+                Write-OpsLog "$sam could not be added to ${group}: $($_.Exception.Message)" -Level ERROR
             }
         }
     }
 }
 
-Write-Log 'Onboarding finished'
+Write-OpsLog 'Onboarding finished'
