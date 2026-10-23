@@ -1,0 +1,5 @@
+FirstName,LastName,SamAccountName,Department,Title,Groups,OU
+Kari,Nordmann,kari.nordmann,Operations,Operations Technician,GRP-Operations;GRP-VPN-Users,"OU=Users,OU=Lab,DC=lab,DC=local"
+Ola,Hansen,ola.hansen,Operations,Shift Lead,GRP-Operations;GRP-VPN-Users,"OU=Users,OU=Lab,DC=lab,DC=local"
+Ingrid,Berg,ingrid.berg,Service Desk,Service Desk Agent,GRP-ServiceDesk,"OU=Users,OU=Lab,DC=lab,DC=local"
+Lars,Johansen,lars.johansen,Network,Network Engineer,GRP-Network;GRP-VPN-Users,"OU=Users,OU=Lab,DC=lab,DC=local"
