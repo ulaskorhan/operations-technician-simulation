@@ -1,0 +1,15 @@
+# Reports written by ansible/playbooks/healthcheck.yml
+ansible/reports/
+reports/
+
+# Never commit private keys (public keys ending in .pub are fine)
+id_rsa
+id_ed25519
+*.pem
+*.key
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp

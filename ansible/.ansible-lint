@@ -1,0 +1,5 @@
+---
+# ansible-lint settings. "production" is the strictest built-in profile.
+profile: production
+exclude_paths:
+  - reports/

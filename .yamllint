@@ -1,0 +1,18 @@
+---
+# yamllint settings. Based on the defaults, with the rules ansible-lint expects.
+extends: default
+
+rules:
+  line-length:
+    max: 160
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false   # GitHub Actions uses "on:" as a key

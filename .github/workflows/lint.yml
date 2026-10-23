@@ -1,0 +1,43 @@
+---
+# Runs all linters on every push and pull request.
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    name: shellcheck, yamllint, ansible-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: shellcheck -x $(git ls-files '*.sh')
+
+      - name: Install yamllint and ansible-lint
+        run: pip install yamllint ansible-lint
+
+      - name: yamllint
+        run: yamllint .
+
+      - name: ansible-lint
+        working-directory: ansible
+        run: |
+          ansible-galaxy collection install -r requirements.yml
+          ansible-lint
+
+  powershell:
+    name: PSScriptAnalyzer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = Invoke-ScriptAnalyzer -Path windows -Recurse -Severity Warning, Error
+          $results | Format-Table -AutoSize
+          if ($results) { exit 1 }
