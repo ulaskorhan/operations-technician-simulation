@@ -56,10 +56,11 @@ flowchart LR
 
 | Folder | What is in it |
 |--------|---------------|
-| [docs/](docs/) | Lab setup guide, lab journal template, skills matrix |
+| [docs/](docs/) | Lab setup guides (Linux and Windows/AD), lab journal template, skills matrix |
 | [itil/](itil/) | Incident and change templates, plus empty examples to fill in |
 | [linux/](linux/) | Cheat sheet and eight break/fix scenarios |
 | [windows/](windows/) | Health check, AD onboarding/offboarding, four scenarios |
+| [networking/](networking/) | Troubleshooting commands for macOS, Windows and Linux (ping, nslookup, tracert, ports) and a practice log |
 | [ansible/](ansible/) | Inventory, config and five playbooks |
 | [monitoring/](monitoring/) | Splunk Universal Forwarder config and saved searches |
 | [kubernetes/](kubernetes/) | k3s install, nginx deployment, one troubleshooting scenario |
@@ -116,6 +117,7 @@ Invoke-ScriptAnalyzer -Path .\windows -Recurse
 | Linux scenario 06 – SSH access | Restore a user's SSH key login, read `auth.log` | Incident handling, customer contact (user locked out) |
 | Linux scenario 07 – high load | Find and stop a runaway process with `top`/`ps` | Event handling, troubleshooting |
 | Linux scenario 08 – DNS resolution | Fix a wrong resolver config with `dig`/`resolvectl` | Troubleshooting, networking |
+| Network troubleshooting commands | `ping`, `nslookup`/`dig`, `tracert`/`traceroute`, `Test-NetConnection` on macOS, Windows and Linux | Troubleshooting, networking |
 | Windows health check | PowerShell report: services, disks, event log errors, uptime, pending reboot | Windows servers, scripting and automation |
 | AD onboarding/offboarding | Create/disable users from CSV, groups, OUs, logging | Windows servers, implementing changes, automation |
 | Windows scenarios 01–03 | Stopped service, full disk, missing DNS record on DC01 | Incident handling, Windows servers |
