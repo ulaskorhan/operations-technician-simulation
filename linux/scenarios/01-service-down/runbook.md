@@ -132,4 +132,26 @@ reading the output carefully).
 
 ## Lessons learned
 
-TODO: in my own words.
+ubuntu is installed by using multipass on mac.
+nginx 1.31.9 was installed. nginx is a web server and reverse proxy (represents the servers and handles inbound traffic.).
+it was deliberately broken bu using the command "sudo ./break.sh"
+time zone difference was noted "The journal shows 09:42, but auth.log shows 08:42:14+00:00" when i checked the commands, but before i toubleshooted with: 
+- curl -I http://localhost
+- systemctl status nginx --no-pager
+- journalctl -u nginx --no-pager -n 20
+- sudo grep nginx /var/log/auth.log | tail -5
+and finally:
+- sudo grep COMMAND /var/log/auth.log | tail -10
+the grep COMMAND command showed that the nginx was deliberately broken. so,
+- sudo systemctl enable --now nginx
+
+double checked with:
+- curl -I http://localhost
+  and
+- sudo ./check.sh
+
+The result is: 
+
+[ OK ] nginx is running
+[ OK ] nginx is enabled at boot
+[ OK ] http://localhost/ answers 200
