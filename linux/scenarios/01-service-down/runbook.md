@@ -25,19 +25,6 @@ curl: (7) Failed to connect to localhost port 80 after 0 ms: Couldn't connect to
 `000` / "Couldn't connect" = no HTTP answer at all, so nothing is listening (not a 404 or 502 from a
 running web server).
 
-## How it was detected
-
-TODO: in my own words (in the lab: the ticket and `check.sh`; in real life: monitoring alert on HTTP
-check, or a customer call).
-
-## Impact
-
-TODO: who would be affected if this were a customer's production website.
-
-## Priority
-
-TODO: impact × urgency, and why.
-
 ## Diagnosis steps
 
 1. Confirm the symptom: `curl -I http://localhost` → couldn't connect (above).
@@ -115,15 +102,6 @@ stop the start there (see scenario 03).
 ## Rollback / restore
 
 `sudo ./restore.sh` returns the lab to a known good state after the exercise.
-
-## Prevention
-
-TODO: in my own words (ideas to consider: monitoring/alerting on the HTTP check, change control for
-manual stops, `Restart=` in the unit for crashes).
-
-## Customer communication
-
-TODO: the update I would send to the customer when the incident is opened, and when it is resolved.
 
 ## Time taken
 
