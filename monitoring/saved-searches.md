@@ -161,5 +161,17 @@ TODO: paste the output of the fixed command.
 (IPv6 localhost), which the old IPv4-only `rex` in search 1 would not have extracted, so I changed it
 to take whatever stands between `from` and `port`.
 
+**What I learned:**
+
+Splunk is a platform for log data. It is mainly used for security (for example in a SOC) and for IT
+operations (for example in an operations center like Orange Business). Splunk makes log data searchable,
+and every event comes with its host, source, sourcetype and time. In IT operations, Splunk helps answer
+questions such as: Is the server down? Is the disk full? Why did a service fail last night? How many
+errors does an application produce?
+
+In my example I counted failed logins, and the results were wrong. My search also matched my own sudo
+commands in auth.log. So it is important to narrow a search by source and process. In Splunk that means
+using `index`, `sourcetype` and a field such as `process=sshd`, not just free text.
+
 TODO: run the searches in Splunk on SPLUNK01, and note which alert I created, how I triggered it and
 how long it took to fire.
