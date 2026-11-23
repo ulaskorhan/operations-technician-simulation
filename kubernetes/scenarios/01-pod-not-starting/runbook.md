@@ -114,8 +114,8 @@ TODO: repeat with the original pods `Running` first and watch them stay up.
 
 ## Time taken
 
-From the pod ages: the broken pod was created about 5 seconds after `set image`, and two original pods
-were `Running` again about one minute after the rollback.
+From the pod ages: the broken pod was created about 5 seconds after `set image`. The rollback ran when
+the original pods were 44 seconds old, and both were `Running` when I checked again at 102 seconds.
 
 ## Lessons learned
 
