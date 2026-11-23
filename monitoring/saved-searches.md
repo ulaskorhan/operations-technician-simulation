@@ -9,14 +9,16 @@ Each search says which lab scenario produces matching events, so I can test it.
 
 ```spl
 index=linux sourcetype=linux_secure ("Failed password" OR "Invalid user")
-| rex "from (?<src_ip>\d{1,3}(?:\.\d{1,3}){3})"
+| rex "from (?<src_ip>\S+) port"
 | stats count AS attempts, values(host) AS hosts, latest(_time) AS last_seen BY src_ip
 | where attempts >= 5
 | convert ctime(last_seen)
 | sort - attempts
 ```
 
-- `rex` pulls the source IP out of the raw text into a field called `src_ip`.
+- `rex` pulls the source IP out of the raw text into a field called `src_ip`. It takes whatever stands
+  between `from` and `port`, so IPv6 addresses such as `::1` match too (an IPv4-only pattern missed them,
+  see My results).
 - `stats ... BY src_ip` gives one row per attacker IP.
 - Test: from WS01, try `ssh wronguser@192.168.100.40` six times (with password login disabled you get "Invalid user" lines).
 
@@ -102,5 +104,62 @@ Example: alert on failed SSH logins (search 1).
 
 ## My results
 
-TODO: for each search, note whether it returned results in my lab and any changes I had to make to it.
-TODO: which alert I created, how I triggered it, and how long it took to fire.
+### 2026-11-23 – Search 1 logic, practised with grep on ops-lnx01
+
+Splunk itself was not running (SPLUNK01 is in the VMware lab, which was too slow on my laptop).
+I practised the same search logic on `/var/log/auth.log` of `ops-lnx01` (Ubuntu 24.04 in Multipass on
+my Mac), the file that `inputs.conf` forwards as `index=linux sourcetype=linux_secure`.
+
+Generate events (four logins with users that do not exist):
+
+```text
+$ for u in admin test oracle admin; do ssh -o BatchMode=yes -o StrictHostKeyChecking=no $u@localhost true; done
+admin@localhost: Permission denied (publickey).
+test@localhost: Permission denied (publickey).
+oracle@localhost: Permission denied (publickey).
+admin@localhost: Permission denied (publickey).
+```
+
+`(publickey)` = the server only accepts SSH keys, no passwords.
+
+Search (Splunk: `index=linux sourcetype=linux_secure "Invalid user"`):
+
+```text
+$ sudo grep "Invalid user" /var/log/auth.log | tail -5
+2026-11-23T07:40:36.223581+00:00 ops-lnx01 sshd[10975]: Invalid user admin from ::1 port 34404
+2026-11-23T07:40:36.420699+00:00 ops-lnx01 sshd[10978]: Invalid user test from ::1 port 34412
+2026-11-23T07:40:36.583959+00:00 ops-lnx01 sshd[10981]: Invalid user oracle from ::1 port 34424
+2026-11-23T07:40:36.713762+00:00 ops-lnx01 sshd[10984]: Invalid user admin from ::1 port 34434
+2026-11-23T07:40:55.206092+00:00 ops-lnx01 sudo:   ubuntu : TTY=pts/0 ; PWD=/home/ubuntu/operations-technician-simulation/monitoring ; USER=root ; COMMAND=/usr/bin/grep 'Invalid user' /var/log/auth.log
+```
+
+Count per user (Splunk: `| stats count by user | sort - count`):
+
+```text
+$ sudo grep "Invalid user" /var/log/auth.log | awk '{print $(NF-4)}' | sort | uniq -c | sort -rn
+      3 ;
+      2 admin
+      1 test
+      1 oracle
+```
+
+**What went wrong:** the `;` rows are not users. sudo logs every command to auth.log, and my own
+`grep 'Invalid user'` command contains the search text, so each search added a matching sudo line.
+`awk` then picked the wrong word out of those lines. Counting per source IP had the same problem
+(`4 ::1` and `4 'Invalid`).
+
+**Fix:** only match lines from sshd:
+
+```bash
+sudo grep "sshd.*Invalid user" /var/log/auth.log | awk '{print $(NF-4)}' | sort | uniq -c | sort -rn
+```
+
+TODO: paste the output of the fixed command.
+
+**What this changed in the Splunk search:** always narrow by source and process, not free text alone
+(`index=linux sourcetype=linux_secure process=sshd "Invalid user"`). The attempts came from `::1`
+(IPv6 localhost), which the old IPv4-only `rex` in search 1 would not have extracted, so I changed it
+to take whatever stands between `from` and `port`.
+
+TODO: run the searches in Splunk on SPLUNK01, and note which alert I created, how I triggered it and
+how long it took to fire.
